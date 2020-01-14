@@ -6,10 +6,8 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.youtubeparcer.R
 import com.example.youtubeparcer.adapter.PlaylistAdapter
 import com.example.youtubeparcer.model.ItemsItem
@@ -34,12 +32,14 @@ class MainActivity : AppCompatActivity() {
         initAdapter()
         getDataFromDatabase()
     }
+
     private fun initAdapter() {
         recycler_view.layoutManager = LinearLayoutManager(this)
-        adapter = PlaylistAdapter() {item: ItemsItem -> clickItem(item)}
+        adapter = PlaylistAdapter() { item: ItemsItem -> clickItem(item) }
         recycler_view.adapter = adapter
 
     }
+
     private fun clickItem(item: ItemsItem) {
         val intent = Intent(this, DetailPlaylistActivity::class.java)
         intent.putExtra("id", item.id)
@@ -48,28 +48,43 @@ class MainActivity : AppCompatActivity() {
         intent.putExtra("etag", item.etag)
         startActivity(intent)
     }
+
     private fun updateAdapterData(model: PlaylistModel?) {
         val data = model?.items
         adapter?.updateData(data)
     }
 
+    private fun fetchNewPlaylistData() {
+        val data = viewModel?.getPlaylistData()
+        data?.observe(this, Observer<PlaylistModel> {
+            val model: PlaylistModel? = data.value
+            when {
+                model != null -> {
+                    updateDatabasePlayList(model)
+                    updateAdapterData(model)
+                }
+            }
+        })
+    }
+
     fun restart(view: View) {
-        if (! NetworkUtils.isOnline(applicationContext)){
+        if (!NetworkUtils.isOnline(applicationContext)) {
             showNoConnection(true)
             Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
-        }else{
-            if(NetworkUtils.isOnline(applicationContext)){
+        } else {
+            if (NetworkUtils.isOnline(applicationContext)) {
                 showNoConnection(false)
             }
         }
     }
 
-    private fun showNoConnection(isShown : Boolean){
+    private fun showNoConnection(isShown: Boolean) {
         btnRestart.isShow(isShown)
         imageInet.isShow(isShown)
     }
+
     private fun updateDatabasePlayList(model: PlaylistModel) {
-        model.let {  viewModel?.insertPlayListData(it)}
+        model.let { viewModel?.insertPlayListData(it) }
     }
 
     private fun getDataFromDatabase() {
@@ -77,6 +92,8 @@ class MainActivity : AppCompatActivity() {
             val model = viewModel?.getDataFromDB()
             if (model != null && !model.items.isNullOrEmpty()) {
                 updateAdapterData(model)
+            } else {
+                fetchNewPlaylistData()
             }
         }
     }

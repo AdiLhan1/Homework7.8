@@ -14,7 +14,7 @@ class App : Application() {
         database = Room.databaseBuilder(this, AppDataBase::class.java, "database")
             .build()
     }
-    fun getInstance():App{
+    fun getInstance(): App{
         return instance
     }
     fun getDatabase(): AppDataBase {

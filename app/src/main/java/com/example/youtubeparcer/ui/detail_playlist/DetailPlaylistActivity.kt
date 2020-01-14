@@ -1,8 +1,8 @@
 package com.example.youtubeparcer.ui.detail_playlist
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -11,7 +11,7 @@ import com.example.youtubeparcer.adapter.DetailPlaylistAdapter
 import com.example.youtubeparcer.model.DetailPlaylistModel
 import com.example.youtubeparcer.model.ItemsItem
 import com.example.youtubeparcer.ui.detail_video.DetailVideoActivity
-import kotlinx.android.synthetic.main.activity_detail_playlist.recycler_view
+import kotlinx.android.synthetic.main.activity_detail_playlist.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,8 +31,10 @@ class DetailPlaylistActivity : AppCompatActivity() {
         initAdapter()
         getIntentData()
         getDetailPlaylistData()
-        subscribeToViewModel()
+//        subscribeToViewModel()
+
     }
+
     private fun getIntentData() {
         id = intent?.getStringExtra("id")
         title = intent?.getStringExtra("title")
@@ -41,9 +43,10 @@ class DetailPlaylistActivity : AppCompatActivity() {
 
     private fun initAdapter() {
         recycler_view.layoutManager = LinearLayoutManager(this)
-        adapter = DetailPlaylistAdapter {item: ItemsItem -> click(item)}
+        adapter = DetailPlaylistAdapter { item: ItemsItem -> click(item) }
         recycler_view.adapter = adapter
     }
+
     private fun click(item: ItemsItem) {
         val intent = Intent(this, DetailVideoActivity::class.java)
         intent.putExtra("playlistId", id)
@@ -57,7 +60,7 @@ class DetailPlaylistActivity : AppCompatActivity() {
         for (i in 0 until model.size) {
             for (z in 0 until model[i].items!!.size) {
                 if (model[i].items!![z].snippet.playlistId == id) {
-                    detailPlaylist = model [i]
+                    detailPlaylist = model[i]
                 }
             }
         }
@@ -91,6 +94,7 @@ class DetailPlaylistActivity : AppCompatActivity() {
     private fun updateDatabasePlaylistData(value: DetailPlaylistModel) {
         viewModel.insertDetailPlaylistData(value)
     }
+
     private fun updateViews(it: DetailPlaylistModel) {
         adapter.updateData(it.items)
     }

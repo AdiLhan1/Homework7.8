@@ -18,6 +18,7 @@ interface YoutubeApi {
         @Query("maxResults") maxResults: String
     ): Call<PlaylistModel>
 
+
     @GET("youtube/v3/playlistItems")
     fun getDetailPlaylists(
         @Query("part") part: String,

@@ -12,7 +12,7 @@ import com.example.youtubeparcer.model.PlaylistModel
 interface YoutubeDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun  insertAllPlaylist(items: PlaylistModel)
+    suspend fun insertAllPlaylist(items: PlaylistModel)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllPlayList(items: PlaylistModel)
@@ -27,7 +27,7 @@ interface YoutubeDao {
     suspend fun getDetailPlaylist(): List<DetailPlaylistModel>?
 
     @Query("SELECT * FROM detail_video")
-    suspend fun insertDetailVideo(): DetailVideoModel
+    suspend fun getDetailVideo(): List<DetailVideoModel>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDetailVideoPlaylistData(items: DetailVideoModel)

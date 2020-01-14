@@ -1,5 +1,4 @@
 package com.example.youtubeparcer.ui.detail_video
-
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.DownloadManager
@@ -29,7 +28,6 @@ import com.example.youtubeparcer.utils.CallBacks
 import com.example.youtubeparcer.utils.DownloadMaster
 import com.example.youtubeparcer.utils.PlayerManager
 import com.google.android.exoplayer2.Player
-import io.reactivex.disposables.Disposable
 import kotlinx.android.synthetic.main.activity_detail_video.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -65,7 +63,6 @@ class DetailVideoActivity : AppCompatActivity(), CallBacks.playerCallBack {
     private var formatsToShowList: MutableList<YtVideo?>? = null
 
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detail_video)
@@ -77,18 +74,34 @@ class DetailVideoActivity : AppCompatActivity(), CallBacks.playerCallBack {
         getExtra()
         setupViews()
         getData()
-//        fetchDetailVideo(viewModel?)
+//        fetchDetailVideo()
 //TODO сделать проверку интернет соединения, данные получать с базы, а если интернет есть, то делать запрос и обновлять базу данных и данные в самой активити
         onBackPress()
     }
 
     private fun getData() {
-    CoroutineScope(Dispatchers.Main).launch {
-        val model = viewModel?.getDataBase()
-        if (model != null) {
-            fetchDetailVideo(model)
+        CoroutineScope(Dispatchers.Main).launch {
+            val model = viewModel?.getDataBase()
+            if (model != null) {
+                getExtraVideoPlaylistData(model)
+            } else {
+                fetchDetailVideo()
+            }
         }
     }
+
+    private fun getExtraVideoPlaylistData(model: List<DetailVideoModel>) {
+        var detailVideoModel: DetailVideoModel? = null
+        for (i in 0 until model.size) {
+            for (z in 0 until model[i].items!!.size) {
+                if (model[i].items!![z].id == videoId) {
+                    detailVideoModel = model[i]
+                }
+            }
+        }
+
+        if (detailVideoModel != null) setData(detailVideoModel)
+        else fetchDetailVideo()
     }
 
     private fun onBackPress() {
@@ -155,11 +168,13 @@ class DetailVideoActivity : AppCompatActivity(), CallBacks.playerCallBack {
             builder.dismiss()
         }
     }
+
     private fun initDialogAdapter() {
-        dialogAdapter = DownloadDialogAdapter { item: YtVideo -> downloadClickItem(item)}
+        dialogAdapter = DownloadDialogAdapter { item: YtVideo -> downloadClickItem(item) }
         dialogRecyclerView.layoutManager = LinearLayoutManager(applicationContext)
         dialogRecyclerView.adapter = dialogAdapter
     }
+
     private fun downloadClickItem(item: YtVideo) {
         selectedVideoQuality = item.videoFile?.url
         selectedVideoExt = item.videoFile?.format?.ext
@@ -167,20 +182,29 @@ class DetailVideoActivity : AppCompatActivity(), CallBacks.playerCallBack {
     }
 
     private fun checkRequestPermission() {
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), 1024)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                1024
+            )
         } else {
             writePermission = true
         }
     }
 
-    private fun fetchDetailVideo(model: DetailVideoModel) {
+    private fun fetchDetailVideo() {
         val data = videoId?.let { viewModel?.getVideoData(it) }
         data?.observe(this, Observer<DetailVideoModel> {
             val model: DetailVideoModel? = data.value
             when {
                 model != null -> {
                     setData(model)
+                    viewModel?.insertDetailPlaylistData(model)
                 }
             }
         })
@@ -191,14 +215,16 @@ class DetailVideoActivity : AppCompatActivity(), CallBacks.playerCallBack {
         fileName = model.items?.get(0)?.snippet?.title
         tv_description.text = model.items?.get(0)?.snippet?.description
         val link = model.items?.get(0)?.id.toString()
-        actualLink(link)
+//        actualLink(link)
     }
 
     @SuppressLint("StaticFieldLeak")
-    private fun actualLink(link : String) {
+    private fun actualLink(link: String) {
         object : YouTubeExtractor(this) {
-            public override fun onExtractionComplete(ytFiles: SparseArray<YtFile>?, vMeta: VideoMeta) {
-
+            public override fun onExtractionComplete(
+                ytFiles: SparseArray<YtFile>?,
+                vMeta: VideoMeta
+            ) {
                 formatsToShowList = mutableListOf()
                 var i = 0
                 var itag: Int
@@ -213,11 +239,12 @@ class DetailVideoActivity : AppCompatActivity(), CallBacks.playerCallBack {
                         i++
                     }
                 }
-                (formatsToShowList)?.sortWith(Comparator {
-                        lhs, rhs -> lhs!!.height - rhs!!.height
+                (formatsToShowList)?.sortWith(Comparator { lhs, rhs ->
+                    lhs!!.height - rhs!!.height
                 })
 
-                val yotutubeUrl: YtVideo? = formatsToShowList?.get(formatsToShowList!!.lastIndex -1)
+                val yotutubeUrl: YtVideo? =
+                    formatsToShowList?.get(formatsToShowList!!.lastIndex - 1)
                 if (yotutubeUrl?.videoFile?.url != null) {
                     playVideo(yotutubeUrl.videoFile?.url!!)
                 }
@@ -231,7 +258,8 @@ class DetailVideoActivity : AppCompatActivity(), CallBacks.playerCallBack {
         if (height != -1) {
             for (frVideo in this.formatsToShowList!!) {
                 if (frVideo?.height == height && (frVideo?.videoFile == null
-                            || frVideo.videoFile!!.format.fps == ytFile.format.fps)) {
+                            || frVideo.videoFile!!.format.fps == ytFile.format.fps)
+                ) {
                     return
                 }
             }
@@ -258,10 +286,13 @@ class DetailVideoActivity : AppCompatActivity(), CallBacks.playerCallBack {
         PlayerManager.getSharedInstance(this).playStream(url)
         PlayerManager.getSharedInstance(this).setPlayerListener(this)
     }
+
     override fun onPlayingEnd() {
     }
+
     override fun onItemClickOnItem(albumId: Int) {
     }
+
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
 
